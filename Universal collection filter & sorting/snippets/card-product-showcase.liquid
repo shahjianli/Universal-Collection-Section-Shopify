@@ -1,0 +1,25 @@
+<div class="grid__item product-card"
+                            data-tags="{{ product.tags | join: ',' | downcase }}"
+                            data-price="{{ product.price }}"
+                            data-available="{{ product.available }}">
+  <div class="product-card-info">
+    <a href="{{ product.url }}" class="full-unstyled-link">
+      <img src="{{ product.featured_image | img_url: '280x300' }}" alt="{{ product.title }}">
+      <h3>{{ product.title }}</h3>
+    </a>
+
+    {% if product.compare_at_price > product.price %}
+      <s class="old-price">{{ product.compare_at_price | money }}</s>
+      <span class="sale-price">{{ product.price | money }}</span>        
+      <span class="badge">Sale</span>
+    {% else %}
+        <span class="price">{{ product.price | money }}</span>
+    {% endif %}
+
+    {% if product.available %}
+        <button type="button" class="btn-addtocart button" data-vid="{{ product.selected_or_first_available_variant.id }}">{{ 'products.product.add_to_cart' | t }}</button>
+    {% else %}
+        <span class="badge">Out of Stock</span>
+    {% endif %}
+  </div>
+</div>

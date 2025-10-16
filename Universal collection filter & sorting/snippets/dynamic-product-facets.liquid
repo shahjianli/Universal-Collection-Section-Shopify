@@ -1,0 +1,155 @@
+{{ 'component-facets.css' | asset_url | stylesheet_tag }}
+<div class="facets-container scroll-trigger animate--fade-in">
+  <div class="facets">
+    <form class="facets__form">
+      <div id="FacetsWrapperDesktop" class="facets__wrapper">
+        {% if section.settings.enable_price %}
+          <details
+            id="Details-price-rage-{{ section.id }}"
+            class="disclosure-has-popup facets__disclosure js-filter"
+          >
+            <summary class="facets__summary caption-large focus-offset">
+              <div>
+                <span>Price</span>
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </div>
+            </summary>
+            <div
+              id="Facet-price-rage-{{ section.id }}"
+              class="facets__display"
+            >
+              <div class="facets__price">
+                <span class="field-currency">{{ cart.currency.symbol }}</span>
+                <div class="field">
+                  <input
+                    class="field__input"
+                    name="min-price"
+                    id="fieldminPrice"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    data-pattern="\d| |,|\."
+                    data-min="0"
+                    data-max="{{ max_price }}"
+                  >
+                  <label class="field__label" for="fieldminPrice">
+                    {{- 'products.facets.from' | t -}}
+                  </label>
+                </div>
+                <span class="field-currency">{{ cart.currency.symbol }}</span>
+                <div class="field">
+                  <input
+                    class="field__input"
+                    name="max-price"
+                    id="fieldmaxPrice"
+                    type="text"
+                    inputmode="decimal"
+                    placeholder="0"
+                    data-pattern="\d| |,|\."
+                    data-min="0"
+                    data-max="{{ max_price }}"
+                  >
+                  <label class="field__label" for="fieldmaxPrice">
+                    {{- 'products.facets.to' | t -}}
+                  </label>
+                </div>
+              </div>
+            </div>
+          </details>
+        {% endif %}
+        {% if section.settings.enable_tags %}
+          <details
+            id="Details-tag-{{ section.id }}"
+            class="disclosure-has-popup facets__disclosure js-filter"
+          >
+            <summary class="facets__summary caption-large focus-offset">
+              <div>
+                <span>Tags</span>
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </div>
+            </summary>
+            <div
+              id="Facet-tags-{{ section.id }}"
+              class="facets__display"
+            >
+              <fieldset class="facets-wrap parent-wrap">
+                <ul class="facets__list list-unstyled" role="list">
+                  {% for tag in all_tags %}
+                    <li class="list-menu__item facets__item">
+                      <label for="tag-{{ forloop.index }}" class="facets__label facet-checkbox chk-tag">
+                        <input type="checkbox" name="tag-{{ tag }}" value="{{ tag }}" id="tag-{{ forloop.index }}">
+                        {{ tag }}
+                      </label>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </fieldset>
+            </div>
+          </details>
+        {% endif %}
+        {% if section.settings.enable_availability %}
+          <details
+            id="Details-availability-{{ section.id }}"
+            class="disclosure-has-popup facets__disclosure js-filter"
+          >
+            <summary class="facets__summary caption-large focus-offset">
+              <div>
+                <span>Availability</span>
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </div>
+            </summary>
+            <div
+              id="Facet-tags-{{ section.id }}"
+              class="facets__display"
+            >
+              <fieldset class="facets-wrap parent-wrap">
+                <ul class="facets__list list-unstyled" role="list">
+                  <li class="list-menu__item facets__item">
+                    <label for="availability-0" class="facets__label facet-checkbox chk-availability">
+                      <input type="checkbox" name="in-stock" value="true" id="availability-0">
+                      In Stock
+                    </label>
+                  </li>
+                  <li class="list-menu__item facets__item">
+                    <label for="availability-1" class="facets__label facet-checkbox chk-availability">
+                      <input type="checkbox" name="out-stock" value="false" id="availability-1">
+                      Out Stock
+                    </label>
+                  </li>
+                </ul>
+              </fieldset>
+            </div>
+          </details>
+        {% endif %}
+      </div>
+      {%- if section.settings.enable_sorting -%}
+        <div class="facet-filters sorting caption">
+          <div class="facet-filters__field">
+            <h2 class="facet-filters__label caption-large text-body">
+              <label for="SortBy">{{ 'products.facets.sort_by_label' | t }}</label>
+            </h2>
+            <div class="select">
+              <select
+                name="sort_by"
+                class="facet-filters__sort select__select caption-large"
+                id="SortBy"
+                aria-describedby="a11y-refresh-page-message"
+              >
+                <option value="manual">Featured</option>
+                {% comment %} <option value="best-selling">Best selling</option> {% endcomment %}
+                <option value="title-ascending" selected="selected">Alphabetically, A-Z</option>
+                <option value="title-descending">Alphabetically, Z-A</option>
+                <option value="price-ascending">Price, low to high</option>
+                <option value="price-descending">Price, high to low</option>
+              </select>
+              <span class="svg-wrapper">
+                {{- 'icon-caret.svg' | inline_asset_content -}}
+              </span>
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+      <div class="active-facets active-facets-desktop"></div>
+    </form>
+  </div>
+</div>

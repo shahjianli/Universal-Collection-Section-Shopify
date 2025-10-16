@@ -1,0 +1,433 @@
+{{ 'component-card.css' | asset_url | stylesheet_tag }}
+
+{% comment %} <script src="{{ 'dynamic-product-showcase.js' | asset_url }}" defer="defer"></script> {% endcomment %}
+<script src="{{ 'dynamic-product-showcase-new.js' | asset_url }}" defer="defer"></script>
+
+{% style %}
+    .load-more-wrap{
+        text-align: center;
+        margin-top: 40px;
+        margin-bottom: 40px;
+    }
+    #filters{
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+    .section-{{ section.id }}-padding {
+        padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+        padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+    }
+
+    .product-loader {
+      position: relative;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .product-loader.hidden {
+      display: none;
+    }
+    .loader-spinner {
+      display: block !important;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #ddd;
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    @media screen and (min-width: 750px) {
+        .section-{{ section.id }}-padding {
+            padding-top: {{ section.settings.padding_top }}px;
+            padding-bottom: {{ section.settings.padding_bottom }}px;
+        }
+    }
+{% endstyle %}
+
+<script>
+  window.allProductHandle = [];  
+  {% for collection in section.settings.collection_list %}
+    {% for product in collection.products %}
+      window.allProductHandle.push('{{ product.handle }}');
+    {% endfor %}
+  {% endfor %}
+  
+
+  {% comment %} window.allProducts = [
+    {% assign first = true %}
+    {% for collection in section.settings.collection_list %}
+      {% for product in collection.products %}
+        {% unless section.settings.exclude_ids contains product.id %}
+          {% if first %}{% assign first = false %}{% else %},{% endif %}
+          {
+            id: {{ product.id }},
+            url: "{{ product.url }}",
+            title: "{{ product.title | escape }}",
+            handle: "{{ product.handle }}",
+            price: {{ product.price }},
+            compare_at_price: "{{ product.compare_at_price | money }}",
+            available: {{ product.available | json }},
+            tags: "{{ product.tags | join: ',' }}",
+            featured_image: "{{ product.featured_image | img_url: '280x300' }}",
+            selected_variant_id: {{ product.selected_or_first_available_variant.id }}
+          }
+        {% endunless %}
+      {% endfor %}
+    {% endfor %}
+  ]; {% endcomment %}
+</script>
+
+
+<div class="dynamic-product-showcase section-{{ section.id }}-padding" data-section-id="{{ section.id }}">
+  <div class="page-width">
+
+    {%- if section.settings.title != blank -%}
+      <h2 class="title inline-richtext {{ section.settings.heading_size }}">
+        {{ section.settings.title }}
+      </h2>
+    {%- endif -%}
+
+    {% if section.settings.collection_list != blank %}
+      {% assign excluded_ids = section.settings.exclude_ids %}
+      {% assign all_tags = "" | split: "," %}
+      {% assign min_price = blank %}
+      {% assign max_price = blank %}
+      {% assign total_product = 1 %}
+      {% for collection in section.settings.collection_list %}
+          {% for product in collection.products %}
+            {% unless excluded_ids contains product.id %}
+              {% if section.settings.enable_tags %}
+                {% assign all_tags = all_tags | concat: product.tags %}
+              {% endif %}
+              
+              {% if section.settings.enable_price %}
+                {% assign price = product.price %}
+                {% if min_price == blank or price < min_price %}
+                    {% assign min_price = price %}
+                {% endif %}
+
+                {% if max_price == blank or price > max_price %}
+                    {% assign max_price = price %}
+                {% endif %}
+              {% endif %}
+
+              {% assign total_product = total_product | plus: 1 %}
+            {% endunless %}
+          {% endfor %}
+      {% endfor %}
+    {% endif %}
+
+
+    {% if section.settings.enable_tags or section.settings.enable_price or section.settings.enable_availability %}
+      <div class="filters" id="filters">
+          {% assign all_tags = all_tags | uniq %}
+          {% render 'dynamic-product-facets', section: section, all_tags: all_tags, max_price: max_price, min_price: min_price %}    
+      </div>
+    {% endif %}
+    
+    {% if section.settings.collection_list != blank %}
+        <div id="product-grid-{{ section.id }}" class="grid product-grid grid--2-col-tablet-down grid--4-col-desktop" data-prod-limit="{{ section.settings.products_per_page }}">
+            {% assign limit = section.settings.products_per_page %}
+            {% assign cnt = 0 %}  
+
+            {% for collection in section.settings.collection_list %}
+                {% for product in collection.products %}
+                    {% unless excluded_ids contains product.id %}
+                        {% assign cnt = cnt | plus: 1 %}
+                            {% render 'card-product-showcase', product: product %}
+                            {% comment %} {% render 'card-product',
+                              card_product: product,
+                              media_aspect_ratio: 'portrait',
+                              image_shape: 'default',
+                              show_secondary_image: false,
+                              show_vendor: false,
+                              show_rating: false,
+                              skip_styles: false,
+                              section_id: section.id,
+                              quick_add: 'standard'
+                            %} {% endcomment %}
+                        {% if cnt == limit %}
+                            {% break %}
+                        {% endif %}
+                    {% endunless %}
+                {% endfor %}
+                {% if cnt == limit %}
+                    {% break %}
+                {% endif %}
+            {% endfor %}  
+        </div>
+        <div class="product-grid empty-product-grid hidden">
+          <div class="title-wrapper center">
+              <h2 class="title title--primary">{{ 'sections.collection_template.empty' | t -}}</h2>
+          </div>    
+        </div>
+        <div class="product-loader hidden">
+          <div class="loader-spinner"></div>
+        </div> 
+        
+        {% if total_product > limit %}
+          <div class="text-center load-more-wrap">
+              <button id="load-more-{{ section.id }}"
+                class="button js-load-more"
+                data-limit="{{ limit }}"
+                data-page="1"
+                data-total="{{ total_product }}"
+                data-current-show="{{ limit }}"
+                data-active-filter=false
+              >
+                Load More
+              </button>
+          </div>
+        {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<script>
+{% comment %} document.addEventListener('DOMContentLoaded', function() {
+    const section = document.querySelector('.dynamic-product-showcase');
+    const sectionId = section.dataset.sectionId;
+    const grid = section.querySelector('.product-grid');
+    const button = section.querySelector('.js-load-more');
+    const btnAddToCarts = section.querySelectorAll('.btn-addtocart');
+    let tagArr = [];
+
+    /* Start: Product add to cart */
+    grid.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-addtocart');
+        if (!btn) return;
+        e.preventDefault();
+        const variant_id = btn.dataset.vid;
+        productAddToCart(variant_id);
+    });
+
+    function productAddToCart(variant_id){
+        let sections = ['cart-drawer', 'cart-icon-bubble'];
+        fetch(window.Shopify.routes.root + 'cart/add.js', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                                id: variant_id,
+                                quantity: 1,
+                                sections: sections
+                            }),
+        })
+        .then((res) => res.json())
+        .then((response) => { 
+            const cartbtn = document.querySelector('#cart-icon-bubble');
+            const cartDrawer = document.querySelector('cart-drawer');
+            
+            cartDrawer.classList.remove('is-empty');          
+            cartDrawer.renderContents(response);
+            setTimeout(() => {
+                freeProductCartDrawer();    
+                cartbtn.dispatchEvent(new Event("click", { bubbles: true })); 
+            }, 800);
+                    
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+    /* End: Product add to cart */
+
+    /* Start: Load more */
+    if (!button) return; 
+
+    const limit = parseInt(button.dataset.limit, 10);
+    let page = 1;
+
+    button.addEventListener('click', function() {
+      page++;
+      const products = window.allProducts;
+      const start = (page - 1) * limit;
+      const end = page * limit;      
+      const productCards = products.slice(start, end);
+      
+      productCards.forEach(product => {
+        const div = document.createElement('div');
+        div.className = 'grid__item product-card';
+        div.dataset.tags = product.tags;
+        div.dataset.price = product.price;
+        div.dataset.available = product.available;
+
+        // Build product card HTML
+        let priceHtml = '';
+        if (product.compare_at_price && product.compare_at_price > product.price) {
+          priceHtml = `<s class="old-price">${product.compare_at_price}</s>
+                       <span class="sale-price">${product.price}</span>
+                       <span class="badge">Sale</span>`;
+        } else {
+          priceHtml = `<span class="price">${product.price}</span>`;
+        }
+
+        let availabilityHtml = '';
+        if (product.available) {
+          availabilityHtml = `<button type="button" class="btn-addtocart button" data-vid="${product.selected_variant_id}">Add to Cart</button>`;
+        } else {
+          availabilityHtml = `<span class="badge">Out of Stock</span>`;
+        }
+
+        div.innerHTML = `
+          <div class="product-card-info">
+            <a href="${product.url}" class="full-unstyled-link">
+                <img src="${product.featured_image || ''}" alt="${product.title}">
+                <h3>${product.title}</h3>
+            </a>
+            ${priceHtml}
+            ${availabilityHtml}
+          </div>
+        `;
+
+        grid.appendChild(div);
+      });
+
+      // Hide button if no more products
+      if (end >= products.length) {
+        button.style.display = 'none';
+      }
+    });
+    /* End: Load more */
+
+    document.querySelector('.filters').addEventListener('change', function(e) {
+      const target = e.target;
+      if(target.closest('.chk-tag')){
+        const checkbox = target.closest('.chk-tag').querySelector('input[type="checkbox"]');
+        const value = checkbox.value;
+        
+        tagArr.push(value);
+        console.log(value);
+      }
+    });
+   
+}); {% endcomment %}
+</script>
+
+{% schema %}
+{
+  "name": "Dynamic Product Showcase",
+  "tag": "section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "title",
+      "default": "t:sections.featured-collection.settings.title.default",
+      "label": "t:sections.featured-collection.settings.title.label"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "options": [
+        {
+          "value": "h2",
+          "label": "t:sections.all.heading_size.options__1.label"
+        },
+        {
+          "value": "h1",
+          "label": "t:sections.all.heading_size.options__2.label"
+        },
+        {
+          "value": "h0",
+          "label": "t:sections.all.heading_size.options__3.label"
+        },
+        {
+          "value": "hxl",
+          "label": "t:sections.all.heading_size.options__4.label"
+        },
+        {
+          "value": "hxxl",
+          "label": "t:sections.all.heading_size.options__5.label"
+        }
+      ],
+      "default": "h1",
+      "label": "t:sections.all.heading_size.label"
+    },
+    {
+      "type": "collection_list",
+      "id": "collection_list",
+      "label": "Collections",
+      "limit": 3
+    },
+    {
+      "type": "text",
+      "id": "exclude_ids",
+      "label": "Exclude Product IDs (comma separated)"
+    },    
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "min": 4,
+      "max": 36,
+      "step": 1,
+      "default": 16,
+      "label": "Products Per Page"
+    },
+    {
+      "type": "header",
+      "content": "Filter & Sorting"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "Enable Sorting",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_tags",
+      "label": "Enable Tag Filter",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_price",
+      "label": "Enable Price Filter",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_availability",
+      "label": "Enable Availability Filter",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 36
+    }
+  ],
+  "presets": [
+    {
+      "name": "Dynamic Product Showcase"
+    }
+  ]
+}
+{% endschema %}
