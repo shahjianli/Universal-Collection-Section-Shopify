@@ -131,7 +131,8 @@ class DynamicProduct {
                     el.style.transform = 'translateY(0)';
                 });
             });
-            (products.length < this.limit && render_type == 'render') ? this.btnLoadMore.style.display = 'none' : this.btnLoadMore.style.display = 'inline-flex';
+            //(products.length < this.limit && render_type == 'render') ? this.btnLoadMore.style.display = 'none' : this.btnLoadMore.style.display = 'inline-flex';
+            (parseInt(this.btnLoadMore.dataset.currentShow) >= parseInt(this.btnLoadMore.dataset.total)) ? this.btnLoadMore.style.display = 'none' : this.btnLoadMore.style.display = 'inline-flex';
             if(!document.querySelector('.empty-product-grid').classList.contains('hidden')) document.querySelector('.empty-product-grid').classList.add('hidden');
         }else{
             if(render_type === 'render') this.productGrid.innerHTML = "";
@@ -308,5 +309,6 @@ class DynamicProduct {
         loader?.classList.add('hidden');
     }
 }   
+
 
 new DynamicProduct();
